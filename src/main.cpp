@@ -1,18 +1,15 @@
 #include <Arduino.h>
 
-// put function declarations here:
-int myFunction(int, int);
+#define DATA_PIN 5
+#define CLOCK_PIN 4
+#define OE_PIN 6
+#define LATCH_PIN 7
 
 void setup() {
   // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
 }
