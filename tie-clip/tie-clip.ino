@@ -7,7 +7,7 @@
 
 #define NUM_LEDS 32
 
-#define NUM_MODES 4
+#define NUM_MODES 5
 
 uint8_t *ledArr;
 uint8_t arrSize;
@@ -17,7 +17,7 @@ uint8_t brightness = 8;
 unsigned long lastButton1 = 0;
 unsigned long lastButton2 = 0;
 
-uint8_t mode = 0;
+uint8_t mode = 3;
 // cycle delay in ms
 uint16_t speed = 125;
 uint8_t speedBase = 1;
@@ -71,8 +71,9 @@ void loop() {
       case 2:
         sideScroll();
         break;
-      // case 3:
-      //   break;
+      case 3:
+        twinkle();
+        break;
       default:
         fullOff();
     }
@@ -196,6 +197,12 @@ void knightRider(){
 
   bitSet(ledArr[knPos/8], (knPos%8));
   // ledArr[knPos / 8] = 1 << (knPos % 8);
+}
+
+void twinkle() {
+  for (uint8_t i = 0; i < arrSize; i++) {
+    ledArr[i] = random(255);
+  }
 }
 
 void testPattern(uint8_t mode) {
