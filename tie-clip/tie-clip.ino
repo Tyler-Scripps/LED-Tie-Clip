@@ -7,7 +7,7 @@
 
 #define NUM_LEDS 32
 
-#define NUM_MODES 5
+#define NUM_MODES 6
 
 uint8_t *ledArr;
 uint8_t arrSize;
@@ -17,8 +17,8 @@ uint8_t brightness = 8;
 unsigned long lastButton1 = 0;
 unsigned long lastButton2 = 0;
 
-uint8_t mode = 3;
-// cycle delay in ms
+uint8_t mode = 0;
+// cycle delay in msbitWrite(ledArr[i], j, alternateState);
 uint16_t speed = 125;
 uint8_t speedBase = 1;
 
@@ -56,11 +56,6 @@ void setup() {
 }
 
 void loop() {
-    sideScroll();
-    // testPattern(6);
-    // count();
-    // fullOn();
-    // knightRider();
     switch (mode) {
       case 0:
         knightRider();
@@ -73,6 +68,9 @@ void loop() {
         break;
       case 3:
         twinkle();
+        break;
+      case 4:
+        alternate();
         break;
       default:
         fullOff();
@@ -150,8 +148,6 @@ void sideScroll() {
     }
 }
 
-
-
 uint32_t currCount = 0;
 void count(){
   ledArr[3] = (currCount >> 24) & 0xFF; // Most significant byte
@@ -203,6 +199,21 @@ void twinkle() {
   for (uint8_t i = 0; i < arrSize; i++) {
     ledArr[i] = random(255);
   }
+}
+
+bool alternateState = 0;
+void alternate() {
+  for (uint8_t i = 0; i < arrSize; i++) {
+    for (uint8_t j = 0; j < 8; j++) {
+      if (j%2) {
+        bitWrite(ledArr[i], j, alternateState);
+      } else {
+        bitWrite(ledArr[i], j, !alternateState);
+      }
+      
+    }
+  }
+  alternateState = !alternateState;
 }
 
 void testPattern(uint8_t mode) {
