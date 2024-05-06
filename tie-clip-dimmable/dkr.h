@@ -1,9 +1,18 @@
-#include <cstdint>
+// #include <cstdint>
 #ifndef DKR
+
+void setNthBit(byte* array, int index, bool value) {
+    if (value) {
+        array[index / 8] |= (1 << (index % 8));
+    } else {
+        array[index / 8] &= ~(1 << (index % 8));
+    }
+}
 
 class DKR {
     public:
-        DKR(uint8_t num)
+        // DKR();
+        void init(uint8_t newLedNum, uint8_t neweArrSize);
         void calculateNextSubFrame(uint8_t* arrPtr);
         void calculateNextFrame();
         void setWidth(uint8_t newWidth);
@@ -18,11 +27,18 @@ class DKR {
         uint8_t* mappedBrightnesses;
         bool direction;
         uint8_t numSubFrames = 32;  // number of sub frames before going to next frame
-}
+};
 
-DKR::DKR(uint8_t newNum, newSize) {
-    numLeds = newNum;
-    arrSize = newSize;
+// DKR::DKR(uint8_t newNum, uint8_t newSize) {
+//     numLeds = newNum;
+//     arrSize = newSize;
+//     brightnesses = new uint8_t[numLeds];
+//     mappedBrightnesses = new uint8_t[numLeds];
+// }
+
+void DKR::init(uint8_t newLedNum, uint8_t neweArrSize) {
+    numLeds = newLedNum;
+    arrSize = neweArrSize;
     brightnesses = new uint8_t[numLeds];
     mappedBrightnesses = new uint8_t[numLeds];
 }
@@ -30,9 +46,9 @@ DKR::DKR(uint8_t newNum, newSize) {
 void DKR::calculateNextSubFrame(uint8_t* arrPtr) {
     for (uint8_t i = 0; i < numLeds; i++) {
         if (mappedBrightnesses[i] < currSubFrame) {
-            arrPtr[i] = 1;
+            setNthBit(arrPtr, i, 1);
         } else {
-            arrPtr[i] = 0;
+            setNthBit(arrPtr, i, 0);
         }
     }
     currSubFrame++;
