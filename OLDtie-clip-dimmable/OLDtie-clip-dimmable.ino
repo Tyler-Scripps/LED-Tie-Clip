@@ -19,13 +19,14 @@
 
 #define NUM_LEDS 32
 #define NUM_MODES 6
+#define NUM_PTRS 2
 
-uint16_t frameBufs[2][NUM_LEDS] = {0};
+uint8_t* ledArrPtrs[NUM_PTRS];
+volatile uint8_t displayedLedArr = 0;
+volatile uint8_t nextLedArr = 1;
+volatile bool calculated[NUM_PTRS] = {0};
 
-volatile uint16_t currentSubFrame = 0;
-
-volatile bool currentFrameBuf = 0;
-volatile bool doneCalculating = false;
+uint8_t arrSize;
 
 uint8_t brightness = 8;
 
@@ -54,18 +55,50 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(BUTTON1_PIN), handleButton1, CHANGE);
     attachInterrupt(digitalPinToInterrupt(BUTTON2_PIN), handleButton2, CHANGE);
 
+    // determine number of bytes based on number of leds
+    arrSize = NUM_LEDS/8;
+    if (NUM_LEDS % 8 != 0)
+    {
+        arrSize++;
+    }
+
+    for(uint8_t i = 0; i < NUM_PTRS; i++) {
+        ledArrPtrs[i] = new uint8_t[arrSize];
+    }
+
+    for (uint8_t i = 0; i < arrSize; i++)
+    {
+        ledArrPtrs[0] = 0;
+    }
+    currLedArr = 0;
     displayLeds();
     analogWrite(OE_PIN, 255 - brightness);
 
-    dkr.init(NUM_LEDS);
+    dkr.init(NUM_LEDS, arrSize);
 
     CurrentTimer.init();
     CurrentTimer.attachInterruptInterval(31, displayLeds);
 }
 
 void loop() {
-    if (!doneCalculating) {
-        dkr.calculateNextFrame(frameBufs[!currentFrameBuf]);
+    // calculate next subframe, should be improved to calculate as many next subframes as possible
+    // if(currLedArr == lastLedArr) {
+    //     currLedArr++;
+    //     // handle rollover
+    //     if (currLedArr >= NUM_PTRS) {
+    //         currLedArr = 0;
+    //     }
+    //     dkr.calculateNextSubFrame(ledArrPtrs[currLedArr]);
+    // }
+    for (int i = nextLedArr; ; i = (i + 1) % NUM_PTRS) {
+        if (calculated[i] == false) {
+            dkr.calculateNextSubFrame(ledArrPtrs[i]);
+            calculated[i] = true;
+        }
+
+        if ((i + 1) % NUM_PTRS == nextLedArr) {
+            break; // Exit the loop
+        }
     }
 }
 
@@ -74,10 +107,10 @@ void handleButton1() {
     return;
     }
     lastButton1 = millis();
-    fullOn(frameBufs[currentFrameBuf]);
+    fullOn(ledArrPtrs[currLedArr]);
     displayLeds();
     delay(10000);
-    fullOff(frameBufs[currentFrameBuf]);
+    fullOff(ledArrPtrs[currLedArr]);
     displayLeds();
     cycleMode();
 }
@@ -87,35 +120,31 @@ void handleButton2() {
     return;
     }
     lastButton2 = millis();
-    fullOn(frameBufs[currentFrameBuf]);
+    fullOn(ledArrPtrs[currLedArr]);
     displayLeds();
     delay(10000);
-    fullOff(frameBufs[currentFrameBuf]);
+    fullOff(ledArrPtrs[currLedArr]);
     displayLeds();
     cycleSpeed();
 }
 
 void displayLeds() {
-    currentSubFrame++;
-
-    if (currentSubFrame >= NUM_LEDS && doneCalculating) {   // finsished frame and next is done calculating
-        currentSubFrame = 0;
-        currentFrameBuf = !currentFrameBuf;
-        doneCalculating = false;
-    } else if (currentSubFrame >= NUM_LEDS) {   // finished frame but next is still calculating
-        currentSubFrame = 0;
-    }
-
-    uint16_t mask = 1 << currentSubFrame;
-    for (uint8_t i = 0; i < NUM_LEDS; i++) {
-        
-        digitalWrite(DATA_PIN, (bool)(frameBufs[currentFrameBuf][i] & mask));
-        digitalWrite(CLOCK_PIN, HIGH);
-        digitalWrite(CLOCK_PIN, LOW);  
+    for (int8_t i = arrSize-1; i >= 0; i--)
+    {
+      shiftOut(DATA_PIN, CLOCK_PIN, MSBFIRST, ledArrPtrs[nextLedArr][i]);
     }
 
     digitalWrite(LATCH_PIN, HIGH);
     digitalWrite(LATCH_PIN, LOW);
+
+    calculated[nextLedArr] = false;
+
+    displayedLedArr = nextLedArr;
+
+    nextLedArr++;
+    if (nextArr >= NUM_PTRS) {
+        nextArr = 0;
+    }
 }
 
 void cycleMode() {
@@ -133,15 +162,15 @@ void cycleSpeed() {
     speed = 63 * speedBase;
 }
 
-void fullOn(uint16_t ledArrPtr[]) {
-    for (uint8_t i = 0; i < NUM_LEDS; i++)
+void fullOn(uint8_t* ledArrPtr) {
+    for (uint8_t i = 0; i < arrSize; i++)
     {
-        ledArrPtr[i] = 0xFFFF;
+        ledArrPtr[i] = 0xFF;
     }
 }
 
-void fullOff(uint16_t ledArrPtr[]) {
-    for (uint8_t i = 0; i < NUM_LEDS; i++)
+void fullOff(uint8_t* ledArrPtr) {
+    for (uint8_t i = 0; i < arrSize; i++)
     {
         ledArrPtr[i] = 0;
     }
