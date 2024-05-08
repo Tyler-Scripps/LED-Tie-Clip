@@ -22,12 +22,12 @@
 
 uint16_t frameBufs[2][NUM_LEDS] = {0};
 
-volatile uint16_t currentSubFrame = 0;
+volatile uint8_t currentSubFrame = 0;
 
 volatile bool currentFrameBuf = 0;
 volatile bool doneCalculating = false;
 
-uint8_t brightness = 8;
+uint8_t brightness = 255;
 
 unsigned long lastButton1 = 0;
 unsigned long lastButton2 = 0;
@@ -45,7 +45,7 @@ void setup() {
     pinMode(LATCH_PIN, OUTPUT);
     digitalWrite(DATA_PIN, LOW);
     digitalWrite(CLOCK_PIN, LOW);
-    digitalWrite(OE_PIN, HIGH);
+    digitalWrite(OE_PIN, LOW);
     digitalWrite(LATCH_PIN, LOW);
 
     pinMode(BUTTON1_PIN, INPUT_PULLUP);
@@ -55,67 +55,84 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(BUTTON2_PIN), handleButton2, CHANGE);
 
     displayLeds();
-    analogWrite(OE_PIN, 255 - brightness);
+    // analogWrite(OE_PIN, 255 - brightness);
 
     dkr.init(NUM_LEDS);
 
     CurrentTimer.init();
-    CurrentTimer.attachInterruptInterval(31, displayLeds);
+
+    //may be running at half speed because attiny running at only 10mhz
+    CurrentTimer.attachInterrupt(30*16*2, displayLeds);
+
+    for (uint8_t i = 0; i < NUM_LEDS; i++) {
+        frameBufs[0][i] = 0x0;
+        frameBufs[1][i] = 0x0;
+    }
+    // frameBufs[0][0] = 0x5555;
+    // frameBufs[1][0] = 0xFF;
+
+    // for (uint8_t i = 0; i < NUM_LEDS; i++) {
+    //     frameBufs[0][i] = 0xFF;
+    //     frameBufs[1][i] = 0xFF;
+    // }
 }
 
 void loop() {
     if (!doneCalculating) {
         dkr.calculateNextFrame(frameBufs[!currentFrameBuf]);
+        doneCalculating = true;
     }
 }
 
 void handleButton1() {
-    if (millis() - lastButton1 < 500) {
-    return;
-    }
-    lastButton1 = millis();
+    // if (millis() - lastButton1 < 500) {
+    //     return;
+    // }
+    // lastButton1 = millis();
     fullOn(frameBufs[currentFrameBuf]);
     displayLeds();
-    delay(10000);
+    delay(1000);
     fullOff(frameBufs[currentFrameBuf]);
     displayLeds();
     cycleMode();
 }
 
 void handleButton2() {
-    if (millis() - lastButton2 < 500) {
-    return;
-    }
-    lastButton2 = millis();
+    // if (millis() - lastButton2 < 500) {
+    //     return;
+    // }
+    // lastButton2 = millis();
     fullOn(frameBufs[currentFrameBuf]);
     displayLeds();
-    delay(10000);
+    delay(1000);
     fullOff(frameBufs[currentFrameBuf]);
     displayLeds();
     cycleSpeed();
 }
 
+// this should be run at 16 times the desired framerate of the animation
 void displayLeds() {
     currentSubFrame++;
 
-    if (currentSubFrame >= NUM_LEDS && doneCalculating) {   // finsished frame and next is done calculating
+    if (currentSubFrame >= 16 && doneCalculating) {   // finsished frame and next is done calculating
         currentSubFrame = 0;
         currentFrameBuf = !currentFrameBuf;
         doneCalculating = false;
-    } else if (currentSubFrame >= NUM_LEDS) {   // finished frame but next is still calculating
+    } else if (currentSubFrame >= 16) {   // finished frame but next is still calculating
         currentSubFrame = 0;
     }
 
     uint16_t mask = 1 << currentSubFrame;
     for (uint8_t i = 0; i < NUM_LEDS; i++) {
+        bool outputState = frameBufs[currentFrameBuf][i] & mask;
         
-        digitalWrite(DATA_PIN, (bool)(frameBufs[currentFrameBuf][i] & mask));
-        digitalWrite(CLOCK_PIN, HIGH);
-        digitalWrite(CLOCK_PIN, LOW);  
+        digitalWriteFast(DATA_PIN, outputState);
+        digitalWriteFast(CLOCK_PIN, HIGH);
+        digitalWriteFast(CLOCK_PIN, LOW);  
     }
 
-    digitalWrite(LATCH_PIN, HIGH);
-    digitalWrite(LATCH_PIN, LOW);
+    digitalWriteFast(LATCH_PIN, HIGH);
+    digitalWriteFast(LATCH_PIN, LOW);
 }
 
 void cycleMode() {

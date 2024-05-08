@@ -1,5 +1,6 @@
 #ifndef DKR
 
+
 void setNthBit(uint8_t* array, int index, bool value) {
     if (value) {
         array[index / 8] |= (1 << (index % 8));
@@ -18,72 +19,66 @@ class DKR {
         uint16_t brightnessToUint16(uint8_t brightness);
     private:
         uint8_t numLeds;
-        // uint8_t arrSize;
-        uint8_t currSubFrame = 0;
-        uint8_t speed = 10;
-        uint8_t position = 0;   // center of lit leds
-        uint8_t width = 5;
-        // uint8_t* brightnesses;
-        // uint8_t* mappedBrightnesses;
+        float speed = 0.5;   // number of leds to move per frame
+        // uint8_t position = 0;   // center of lit leds
+        float position = 0;
+        uint8_t width = 9;
         bool direction;
-        uint8_t numSubFrames = 32;  // number of sub frames before going to next frame
 };
 
-// DKR::DKR(uint8_t newNum, uint8_t newSize) {
-//     numLeds = newNum;
-//     arrSize = newSize;
-//     brightnesses = new uint8_t[numLeds];
-//     mappedBrightnesses = new uint8_t[numLeds];
-// }
 
 void DKR::init(uint8_t newLedNum) {
     numLeds = newLedNum;
-    // arrSize = neweArrSize;
-    // brightnesses = new uint8_t[numLeds];
-    // mappedBrightnesses = new uint8_t[numLeds];
+
 }
 
-// void DKR::calculateNextSubFrame(uint8_t* arrPtr) {
-//     for (uint8_t i = 0; i < numLeds; i++) {
-//         if (mappedBrightnesses[i] < currSubFrame) {
-//             setNthBit(arrPtr, i, 1);
-//         } else {
-//             setNthBit(arrPtr, i, 0);
-//         }
-//     }
-//     currSubFrame++;
-//     if (currSubFrame >= numSubFrames) {
-//         currSubFrame = 0;
-//         calculateNextFrame();
-//     }
-// }
 
 void DKR::calculateNextFrame(uint16_t* arrPtr) {
     // if at the end flip the direction
-    if (position == 0 || position == numLeds-1) {
+    if (position <= 0 || position >= numLeds-1) {
         direction = !direction;
     }
 
     // move in current direction
     if (direction) {
-        position++;
+        position += speed;
     } else {
-        position--;
+        position -= speed;
     }
 
-    arrPtr[position] = 0xFFFF;
+    // zero out led array
+    for (uint8_t i = 0; i < numLeds; i++) {
+        arrPtr[i] = 0;
+    }
+
     uint8_t numSteps = ((width-1)/2);
-    for (uint8_t i = 0; i < numSteps; i++) {
-        uint8_t brightnessStep = 16 - (((numSteps+1)/16)*i);
-        int16_t upperIndex = position+i;
-        int16_t lowerIndex = position-i;
-        if (lowerIndex >= 0) {
-            arrPtr[lowerIndex] = brightnessToUint16(brightnessStep);
-        }
-        if (upperIndex < numLeds) {
-            arrPtr[upperIndex] = brightnessToUint16(brightnessStep);
+
+    uint8_t brightnessStep;
+
+    for (uint8_t i = 0; i < numLeds; i++) {
+        // if the led is too far away it must be zero so we can skip doing trig
+        float diff = position - i;
+        if (abs(diff) < numSteps) {
+            // i takes the place of x
+            brightnessStep = (uint8_t)(8*sin((TWO_PI/(width-1))*i+(((PI-(position*HALF_PI)))/2))) + 8;
+            arrPtr[i] = brightnessToUint16(brightnessStep);
         }
     }
+
+    // arrPtr[position] = 0xFFFF;
+    // uint8_t numSteps = ((width-1)/2);
+    // for (uint8_t i = 0; i < numSteps; i++) {
+    //     // uint8_t brightnessStep = 16 - (((numSteps+1)/16)*i);
+    //     uint8_t brightnesStep = (sin() + 1)*8
+    //     int16_t upperIndex = position+i;
+    //     int16_t lowerIndex = position-i;
+    //     if (lowerIndex >= 0) {
+    //         arrPtr[lowerIndex] = brightnessToUint16(brightnessStep);
+    //     }
+    //     if (upperIndex < numLeds) {
+    //         arrPtr[upperIndex] = brightnessToUint16(brightnessStep);
+    //     }
+    // }
 }
 
 void DKR::setWidth(uint8_t newWidth) {
