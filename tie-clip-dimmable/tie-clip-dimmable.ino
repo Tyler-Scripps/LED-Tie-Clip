@@ -9,6 +9,7 @@
 #include "ATtiny_TimerInterrupt.h"
 
 #include "dkr.h"
+#include "twinkle.h"
 
 #define DATA_PIN 5
 #define CLOCK_PIN 4
@@ -18,9 +19,9 @@
 #define BUTTON2_PIN 10
 
 #define NUM_LEDS 32
-#define NUM_MODES 6
+#define NUM_MODES 2
 
-uint16_t frameBufs[2][NUM_LEDS] = {0};
+uint32_t frameBufs[2][NUM_LEDS] = {0};
 
 volatile uint8_t currentSubFrame = 0;
 
@@ -37,6 +38,7 @@ uint16_t speed = 125;
 uint8_t speedBase = 1;
 
 DKR dkr;
+Twinkle twinkle;
 
 void setup() {
     pinMode(DATA_PIN, OUTPUT);
@@ -58,37 +60,41 @@ void setup() {
     // analogWrite(OE_PIN, 255 - brightness);
 
     dkr.init(NUM_LEDS);
+    twinkle.init(NUM_LEDS);
 
     CurrentTimer.init();
 
     //may be running at half speed because attiny running at only 10mhz
-    CurrentTimer.attachInterrupt(30*16*2, displayLeds);
+    CurrentTimer.attachInterrupt(30*32*2, displayLeds);
 
     for (uint8_t i = 0; i < NUM_LEDS; i++) {
         frameBufs[0][i] = 0x0;
         frameBufs[1][i] = 0x0;
     }
-    // frameBufs[0][0] = 0x5555;
-    // frameBufs[1][0] = 0xFF;
-
-    // for (uint8_t i = 0; i < NUM_LEDS; i++) {
-    //     frameBufs[0][i] = 0xFF;
-    //     frameBufs[1][i] = 0xFF;
-    // }
 }
 
 void loop() {
     if (!doneCalculating) {
-        dkr.calculateNextFrame(frameBufs[!currentFrameBuf]);
+        switch (mode)
+        {
+        case 0:
+            dkr.calculateNextFrame(frameBufs[!currentFrameBuf]);
+            break;
+        case 1:
+            twinkle.calculateNextFrame(frameBufs[!currentFrameBuf]);
+            break;
+        default:
+            break;
+        }
         doneCalculating = true;
     }
 }
 
 void handleButton1() {
-    // if (millis() - lastButton1 < 500) {
-    //     return;
-    // }
-    // lastButton1 = millis();
+    if (millis() - lastButton1 < 500) {
+        return;
+    }
+    lastButton1 = millis();
     fullOn(frameBufs[currentFrameBuf]);
     displayLeds();
     delay(1000);
@@ -98,10 +104,10 @@ void handleButton1() {
 }
 
 void handleButton2() {
-    // if (millis() - lastButton2 < 500) {
-    //     return;
-    // }
-    // lastButton2 = millis();
+    if (millis() - lastButton2 < 500) {
+        return;
+    }
+    lastButton2 = millis();
     fullOn(frameBufs[currentFrameBuf]);
     displayLeds();
     delay(1000);
@@ -114,11 +120,11 @@ void handleButton2() {
 void displayLeds() {
     currentSubFrame++;
 
-    if (currentSubFrame >= 16 && doneCalculating) {   // finsished frame and next is done calculating
+    if (currentSubFrame >= 32 && doneCalculating) {   // finsished frame and next is done calculating
         currentSubFrame = 0;
         currentFrameBuf = !currentFrameBuf;
         doneCalculating = false;
-    } else if (currentSubFrame >= 16) {   // finished frame but next is still calculating
+    } else if (currentSubFrame >= 32) {   // finished frame but next is still calculating
         currentSubFrame = 0;
     }
 
@@ -150,14 +156,14 @@ void cycleSpeed() {
     speed = 63 * speedBase;
 }
 
-void fullOn(uint16_t ledArrPtr[]) {
+void fullOn(uint32_t ledArrPtr[]) {
     for (uint8_t i = 0; i < NUM_LEDS; i++)
     {
         ledArrPtr[i] = 0xFFFF;
     }
 }
 
-void fullOff(uint16_t ledArrPtr[]) {
+void fullOff(uint32_t ledArrPtr[]) {
     for (uint8_t i = 0; i < NUM_LEDS; i++)
     {
         ledArrPtr[i] = 0;
