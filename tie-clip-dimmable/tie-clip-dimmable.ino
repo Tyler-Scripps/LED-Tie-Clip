@@ -10,6 +10,8 @@
 
 #include "dkr.h"
 #include "twinkle.h"
+#include "count.h"
+#include "alternate.h"
 
 #define DATA_PIN 5
 #define CLOCK_PIN 4
@@ -19,7 +21,7 @@
 #define BUTTON2_PIN 10
 
 #define NUM_LEDS 32
-#define NUM_MODES 2
+#define NUM_MODES 4
 
 uint32_t frameBufs[2][NUM_LEDS] = {0};
 
@@ -39,6 +41,8 @@ uint8_t speedBase = 1;
 
 DKR dkr;
 Twinkle twinkle;
+Count count;
+Alternate alternate;
 
 void setup() {
     pinMode(DATA_PIN, OUTPUT);
@@ -61,6 +65,8 @@ void setup() {
 
     dkr.init(NUM_LEDS);
     twinkle.init(NUM_LEDS);
+    count.init(NUM_LEDS);
+    alternate.init(NUM_LEDS);
 
     CurrentTimer.init();
 
@@ -82,6 +88,12 @@ void loop() {
             break;
         case 1:
             twinkle.calculateNextFrame(frameBufs[!currentFrameBuf]);
+            break;
+        case 2:
+            count.calculateNextFrame(frameBufs[!currentFrameBuf]);
+            break;
+        case 3:
+            alternate.calculateNextFrame(frameBufs[!currentFrameBuf]);
             break;
         default:
             break;

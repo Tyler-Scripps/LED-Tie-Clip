@@ -1,4 +1,5 @@
 #ifndef TWINKLE_H
+#define TWINKLE_H
 #include "modeHelpers.h"
 #include "modeBase.h"
 
