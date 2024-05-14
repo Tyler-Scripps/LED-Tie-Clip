@@ -4,6 +4,7 @@
 class ModeBase {
     public:
         void init(uint8_t newLedNum);
+        void init(uint8_t newLedNum, float brightness);
         virtual void calculateNextFrame(uint32_t* arrPtr);
         void setBrightness(float newBrightness);
     protected:
@@ -14,6 +15,11 @@ class ModeBase {
 void ModeBase::init(uint8_t newLedNum) {
     numLeds = newLedNum;
 
+}
+
+void ModeBase::init(uint8_t newLedNum, float newBrightness) {
+    this->numLeds = newLedNum;
+    this->brightness = brightness;
 }
 
 void ModeBase::setBrightness(float newBrightness) {

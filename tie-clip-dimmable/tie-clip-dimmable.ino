@@ -12,6 +12,7 @@
 #include "twinkle.h"
 #include "count.h"
 #include "alternate.h"
+#include "sideScroll.h"
 
 #define DATA_PIN 5
 #define CLOCK_PIN 4
@@ -21,7 +22,8 @@
 #define BUTTON2_PIN 10
 
 #define NUM_LEDS 32
-#define NUM_MODES 4
+#define NUM_MODES 5
+#define BRIGHTNESS 0.125
 
 uint32_t frameBufs[2][NUM_LEDS] = {0};
 
@@ -43,6 +45,7 @@ DKR dkr;
 Twinkle twinkle;
 Count count;
 Alternate alternate;
+SideScroll sidescroll;
 
 void setup() {
     pinMode(DATA_PIN, OUTPUT);
@@ -63,10 +66,11 @@ void setup() {
     displayLeds();
     // analogWrite(OE_PIN, 255 - brightness);
 
-    dkr.init(NUM_LEDS);
-    twinkle.init(NUM_LEDS);
-    count.init(NUM_LEDS);
-    alternate.init(NUM_LEDS);
+    dkr.init(NUM_LEDS, BRIGHTNESS);
+    twinkle.init(NUM_LEDS, BRIGHTNESS);
+    count.init(NUM_LEDS, BRIGHTNESS);
+    alternate.init(NUM_LEDS, BRIGHTNESS);
+    sidescroll.init(NUM_LEDS, BRIGHTNESS);
 
     CurrentTimer.init();
 
@@ -94,6 +98,9 @@ void loop() {
             break;
         case 3:
             alternate.calculateNextFrame(frameBufs[!currentFrameBuf]);
+            break;
+        case 4:
+            sidescroll.calculateNextFrame(frameBufs[!currentFrameBuf]);
             break;
         default:
             break;
