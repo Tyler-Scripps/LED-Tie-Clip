@@ -135,7 +135,7 @@ void handleButton2() {
     cycleSpeed();
 }
 
-// this should be run at 16 times the desired framerate of the animation
+// this should be run at 32 times the desired framerate of the animation
 void displayLeds() {
     currentSubFrame++;
 
