@@ -1,3 +1,10 @@
+# LED Tie Clip
+This is a tie clip with LEDs across the front allowing for fun animations like a night rider effect
+
+### Circuit board
+The PCB deisgn can be found at the following link on flux.ai\
+https://www.flux.ai/tyler-s/led-tie-clip-mouse-bite
+
 ### tinyMegaCore Installation
 - Add board manager url to preferences
     - http://drazzy.com/package_drazzy.com_index.json
